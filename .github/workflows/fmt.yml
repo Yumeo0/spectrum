@@ -27,6 +27,9 @@ jobs:
         with:
           cdn: ${{ env.PROTOS_CDN }}
 
+      - name: Generate build artifacts
+        run: cargo check --all
+
       - name: Format code
         run: cargo fmt --all
 
