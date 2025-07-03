@@ -4,16 +4,26 @@ use thiserror::Error;
 
 use crate::{NetworkPacket, PacketDirection};
 
+/// Errors that can occur during network packet parsing and validation
 #[derive(Error, Debug)]
 pub enum NetworkPacketError {
+    /// Error occurred while parsing the network packet structure using etherparse
     #[error("error while parsing network packet: {0}")]
     EtherparsePacketError(#[from] SliceError),
+    
+    /// The packet does not contain a transport layer (UDP/TCP)
     #[error("transport layer is not present on packet")]
     TransportLayerNotPresent,
+    
+    /// The transport layer is not UDP protocol (only UDP is supported)
     #[error("transport layer is not udp protocol")]
     TransportLayerNotUdp,
+    
+    /// The packet's source and destination ports don't match any configured port ranges
     #[error("packet does not match the required ports")]
     IncorrectPorts,
+    
+    /// The packet payload length is invalid for the expected packet type
     #[error("packet payload length is invalid: {0}")]
     InvalidPayloadLength(usize),
 }

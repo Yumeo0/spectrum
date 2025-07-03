@@ -14,18 +14,30 @@ pub mod proto;
 
 const MIN_GAME_PACKET_HEADER_LEN: usize = 14;
 
+/// Errors that can occur during game packet parsing, validation, and processing
 #[derive(Error, Debug)]
 pub enum GamePacketError {
+    /// Packet header is too short to contain required fields
     #[error("packet header must be at least {expected} bytes, but was {actual}")]
     HeaderTooShort { expected: usize, actual: usize },
+    
+    /// Packet type is not one of the valid game packet types
     #[error("invalid packet type {actual}. Expected one of: 1, 2, 4, 17, 18, 20")]
     InvalidPacketType { actual: u8 },
+    
+    /// Packet data is shorter than the size specified in the header
     #[error("unexpected packet size. Expected {expected} bytes, but got {actual}")]
     PacketTooShort { expected: usize, actual: usize },
+    
+    /// CRC32 checksum validation failed for the packet payload
     #[error("game packet CRC mismatch")]
     CrcMismatch { expected: u32, actual: u32 },
+    
+    /// Failed to decompress the packet payload using zlib
     #[error("failed to decompress packet payload: {0}")]
     DecompressError(DecompressError),
+    
+    /// Error occurred during payload decryption
     #[error(transparent)]
     CryptoError(#[from] CryptoError),
 }
@@ -36,19 +48,46 @@ impl From<DecompressError> for GamePacketError {
     }
 }
 
+/// Represents a parsed game packet with all relevant fields
 #[derive(Clone)]
 pub struct GamePacket {
+    /// Total packet size including headers
     pub size: usize,
+    /// Message type identifier (determines header structure)
     pub msg_type: u8,
+    /// Sequence number for packet ordering and crypto
     pub seq_no: u32,
+    /// Optional RPC identifier for request/response matching
     pub rpc_id: Option<u16>,
+    /// Message ID identifying the specific message type
     pub msg_id: u16,
+    /// CRC32 checksum for payload validation
     pub crc: u32,
+    /// Decrypted and decompressed message payload
     pub raw_msg: Vec<u8>,
+    /// Timestamp when the packet was processed
     pub timestamp: SystemTime,
 }
 
 impl GamePacket {
+    /// Creates a new GamePacket from raw packet data
+    /// 
+    /// # Arguments
+    /// 
+    /// * `data` - Raw packet bytes including all headers
+    /// * `session_key` - Optional session key for decryption
+    /// 
+    /// # Returns
+    /// 
+    /// A parsed `GamePacket` with decrypted and decompressed payload
+    /// 
+    /// # Errors
+    /// 
+    /// Returns `GamePacketError` if:
+    /// - Packet structure is invalid
+    /// - CRC checksum fails
+    /// - Decryption fails (missing key or crypto error)
+    /// - Decompression fails
     pub fn try_new(data: Vec<u8>, session_key: Option<&[u8; 32]>) -> Result<Self, GamePacketError> {
         if data.len() < MIN_GAME_PACKET_HEADER_LEN {
             return Err(GamePacketError::HeaderTooShort {
@@ -120,10 +159,31 @@ impl GamePacket {
         })
     }
 
+    /// Returns the human-readable name of the message type, if known
+    /// 
+    /// # Returns
+    /// 
+    /// `Some(name)` if the message ID corresponds to a known message type,
+    /// `None` if the message ID is unknown
     pub fn get_msg_name(&self) -> Option<&str> {
         MessageId::try_from(self.msg_id).ok().map(|id| id.into())
     }
 
+    /// Parses the packet payload as a Protocol Buffers message
+    /// 
+    /// # Type Parameters
+    /// 
+    /// * `T` - The Protocol Buffers message type to parse
+    /// 
+    /// # Returns
+    /// 
+    /// The parsed message or a protobuf parsing error
+    /// 
+    /// # Example
+    /// 
+    /// ```ignore
+    /// let response: ProtoKeyResponse = packet.parse_proto()?;
+    /// ```
     pub fn parse_proto<T: protobuf::Message>(&self) -> protobuf::Result<T> {
         T::parse_from_bytes(&self.raw_msg)
     }

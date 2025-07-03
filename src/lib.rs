@@ -1,3 +1,7 @@
+//! Spectrum - a rust crate for processing and parsing waves game packets.
+//! 
+//! Developed by Wuthery team, open-sourced for the community. Works with any packet source.
+
 use thiserror::Error;
 
 use crate::crypto::decrypt_session_key;
@@ -19,12 +23,18 @@ pub use crate::network::NetworkPacketError;
 
 const PORT_RANGES: &[(u16, u16)] = &[(13100, 13200), (23100, 23200)];
 
+/// Top-level errors that can occur during packet sniffing and processing
 #[derive(Error, Debug)]
 pub enum SnifferError {
+    /// Error occurred during network packet parsing or validation
     #[error(transparent)]
     NetworkPacket(#[from] NetworkPacketError),
+    
+    /// Error occurred during KCP segment processing
     #[error(transparent)]
     Kcp(#[from] KcpError),
+    
+    /// Error occurred during game packet parsing, decryption, or decompression
     #[error(transparent)]
     GamePacket(#[from] GamePacketError),
 }
@@ -46,6 +56,7 @@ pub enum PacketDirection {
     Received,
 }
 
+/// Main packet sniffer that processes network traffic and extracts game packets
 #[derive(Default)]
 pub struct Sniffer {
     sent_kcp: Option<KcpSniffer>,
@@ -57,6 +68,20 @@ pub struct Sniffer {
 }
 
 impl Sniffer {
+    /// Creates a new packet sniffer with the specified RSA private key
+    /// 
+    /// # Arguments
+    /// 
+    /// * `private_key` - RSA private key in PEM format used for session key decryption
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use spectrum::Sniffer;
+    /// 
+    /// let private_key = "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----";
+    /// let sniffer = Sniffer::new(private_key.to_string());
+    /// ```
     pub fn new(private_key: String) -> Self {
         Self {
             private_key,
@@ -64,6 +89,23 @@ impl Sniffer {
         }
     }
 
+    /// Processes a raw network packet and returns any extracted packets
+    /// 
+    /// # Arguments
+    /// 
+    /// * `data` - Raw UDP network packet bytes
+    /// 
+    /// # Returns
+    /// 
+    /// A vector of processed packets, which may include network packets and game packets.
+    /// Game packets may contain parsing errors if decryption or decompression fails.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns `SnifferError` if:
+    /// - Network packet parsing fails
+    /// - KCP segment processing encounters errors
+    /// - Critical game packet parsing errors occur
     pub fn receive_packet(&mut self, data: Vec<u8>) -> Result<Vec<Packet>, SnifferError> {
         let packet = parse_network_packet(&PORT_RANGES, data)?;
 
