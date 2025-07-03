@@ -5,12 +5,11 @@ on:
     branches:
       - master
 
-env:
-  PROTOS_CDN: ${{ secrets.PROTOS_CDN }}
-
 jobs:
   docs:
     runs-on: ubuntu-latest
+    env:
+      PROTOS_CDN: ${{ secrets.PROTOS_CDN }}
     steps:
       - uses: actions/checkout@v4
 
