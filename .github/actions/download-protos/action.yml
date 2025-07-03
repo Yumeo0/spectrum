@@ -1,0 +1,26 @@
+name: Download Proto Files
+description: Downloads required proto files
+
+inputs:
+  cdn:
+    description: Base CDN URL
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create proto folder
+      run: mkdir -p proto
+      shell: bash
+
+    - name: Download packetIds.json
+      run: curl -sSL "$CDN/packetIds.json" -o proto/packetIds.json
+      shell: bash
+      env:
+        CDN: ${{ inputs.cdn }}
+
+    - name: Download protos.proto
+      run: curl -sSL "$CDN/protos.proto" -o proto/protos.proto
+      shell: bash
+      env:
+        CDN: ${{ inputs.cdn }}

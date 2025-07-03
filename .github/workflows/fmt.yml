@@ -8,6 +8,8 @@ on:
 jobs:
   fmt:
     runs-on: ubuntu-latest
+    env:
+      PROTOS_CDN: ${{ secrets.PROTOS_CDN }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -19,6 +21,11 @@ jobs:
           rustup update nightly
           rustup default nightly
           rustup component add rustfmt
+
+      - name: Download proto files
+        uses: ./.github/actions/download-protos
+        with:
+          cdn: ${{ env.PROTOS_CDN }}
 
       - name: Format code
         run: cargo fmt --all

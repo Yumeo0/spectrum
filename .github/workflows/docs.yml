@@ -19,9 +19,9 @@ jobs:
           rustup default nightly
 
       - name: Download proto files
-        run: |
-          curl -sSL "$PROTOS_CDN/packetIds.json" -o proto/packetIds.json
-          curl -sSL "$PROTOS_CDN/protos.proto" -o proto/protos.proto
+        uses: ./.github/actions/download-protos
+        with:
+          cdn: ${{ env.PROTOS_CDN }}
 
       - name: Build docs
         run: cargo doc --no-deps --verbose

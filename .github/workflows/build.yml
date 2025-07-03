@@ -14,15 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download proto files
-        run: |
-          curl -sSL "$PROTOS_CDN/packetIds.json" -o proto/packetIds.json
-          curl -sSL "$PROTOS_CDN/protos.proto" -o proto/protos.proto
-
       - name: Setup Rust
         run: |
           rustup update nightly
           rustup default nightly
+
+      - name: Download proto files
+        uses: ./.github/actions/download-protos
+        with:
+          cdn: ${{ env.PROTOS_CDN }}
 
       - name: Run cargo check
         run: cargo check --all --verbose
