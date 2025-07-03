@@ -47,7 +47,7 @@ your_project
 [workspace]
 members = [
     "spectrum",
-    "your_project"
+    "your_crate"
 ]
 ```
 4. In `your_crate/Cargo.toml`, add:
