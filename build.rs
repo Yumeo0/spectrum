@@ -9,7 +9,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 fn main() {
     if let Err(e) = run() {
-        eprintln!("Build failed: {}", e);
+        eprintln!("Build failed: {e}");
         std::process::exit(1);
     }
 }
@@ -90,11 +90,11 @@ fn load_packet_ids(proto_dir: &Path) -> Result<Vec<(u16, String)>> {
     for (key, value) in json_object {
         let id = key
             .parse::<u16>()
-            .map_err(|e| format!("Invalid packet ID '{}': {}", key, e))?;
+            .map_err(|e| format!("Invalid packet ID '{key}': {e}"))?;
 
         let name = value
             .as_str()
-            .ok_or_else(|| format!("Expected string value for packet ID {}", id))?;
+            .ok_or_else(|| format!("Expected string value for packet ID {id}"))?;
 
         packet_ids.push((id, name.to_string()));
     }
