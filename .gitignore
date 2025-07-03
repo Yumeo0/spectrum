@@ -1,0 +1,7 @@
+/target
+
+/proto/**
+!/proto/.gitkeep
+
+/src/game/message.rs
+/src/game/proto/protos.rs
