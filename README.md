@@ -81,10 +81,10 @@ use spectrum::Sniffer;
 let sniffer = Sniffer::new("...");
 ```
 
-### Acknowledgements
+## Acknowledgements
 
 Special thanks to [IceDynamix](https://github.com/IceDynamix) and all the [contributors](https://github.com/IceDynamix/reliquary/graphs/contributors) of [reliquary](https://github.com/IceDynamix/reliquary) repo, which was used as a reference for Spectrum's implementation. 
 
-# License
+## License
 
 The project is distributed under [Apache License 2.0 License](LICENSE).
