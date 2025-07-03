@@ -12,27 +12,27 @@ pub enum CryptoError {
     /// RSA encryption/decryption operation failed
     #[error("RSA Error: {0}")]
     RSA(#[from] rsa::errors::Error),
-    
+
     /// Failed to parse RSA private key from PEM format
     #[error("failed to parse RSA key from PEM: {0}")]
     ParsePemFailed(#[from] rsa::pkcs1::Error),
-    
+
     /// AES decryption padding removal failed
     #[error("AES unpadding error: {0}")]
     Unpadding(String),
-    
+
     /// Invalid AES key length provided (must be 32 bytes for AES-256)
     #[error("invalid AES key length: {0}")]
     AesInvalidLength(#[from] InvalidLength),
-    
+
     /// Failed to convert byte slice to fixed-size array
     #[error("TryFromSliceError: {0}")]
     TryFromSlice(#[from] TryFromSliceError),
-    
+
     /// Session key is required for decryption but was not provided
     #[error("session key is missing, cannot decrypt")]
     MissingSessionKey,
-    
+
     /// The provided session key is invalid or corrupted
     #[error("invalid session key provided")]
     InvalidSessionKey,

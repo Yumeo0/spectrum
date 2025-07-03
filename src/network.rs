@@ -10,19 +10,19 @@ pub enum NetworkPacketError {
     /// Error occurred while parsing the network packet structure using etherparse
     #[error("error while parsing network packet: {0}")]
     EtherparsePacketError(#[from] SliceError),
-    
+
     /// The packet does not contain a transport layer (UDP/TCP)
     #[error("transport layer is not present on packet")]
     TransportLayerNotPresent,
-    
+
     /// The transport layer is not UDP protocol (only UDP is supported)
     #[error("transport layer is not udp protocol")]
     TransportLayerNotUdp,
-    
+
     /// The packet's source and destination ports don't match any configured port ranges
     #[error("packet does not match the required ports")]
     IncorrectPorts,
-    
+
     /// The packet payload length is invalid for the expected packet type
     #[error("packet payload length is invalid: {0}")]
     InvalidPayloadLength(usize),
@@ -33,21 +33,17 @@ pub fn parse_network_packet(
     bytes: Vec<u8>,
 ) -> Result<NetworkPacket, NetworkPacketError> {
     let (udp, payload) = parse_udp(bytes)?;
-    let direction = validate_ports(&port_ranges, udp)?;
+    let direction = validate_ports(port_ranges, udp)?;
 
     let length = payload.len();
     if length <= 13 {
         match length {
-            1 => {
-                return Ok(NetworkPacket::HandshakeRequested);
-            }
+            1 => Ok(NetworkPacket::HandshakeRequested),
             13 => {
                 let conv_id = u32::from_le_bytes(payload[1..5].try_into().unwrap());
-                return Ok(NetworkPacket::HandshakeEstablished(conv_id));
+                Ok(NetworkPacket::HandshakeEstablished(conv_id))
             }
-            _ => {
-                return Err(NetworkPacketError::InvalidPayloadLength(length));
-            }
+            _ => Err(NetworkPacketError::InvalidPayloadLength(length)),
         }
     } else {
         Ok(NetworkPacket::SegmentData(direction, payload))

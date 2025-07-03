@@ -1,6 +1,6 @@
 use std::env;
 use std::fs::{self, File};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use quote::{format_ident, quote};
 use serde_json::Value;
@@ -40,7 +40,7 @@ fn ensure_directories_exist(out_dir: &PathBuf, message_ids_path: &PathBuf) -> Re
     Ok(())
 }
 
-fn collect_proto_files(proto_dir: &PathBuf) -> Result<Vec<PathBuf>> {
+fn collect_proto_files(proto_dir: &Path) -> Result<Vec<PathBuf>> {
     let entries = fs::read_dir(proto_dir)?;
     let proto_files: Vec<PathBuf> = entries
         .filter_map(|entry| entry.ok())
@@ -73,7 +73,7 @@ fn generate_protobuf_code(
     Ok(())
 }
 
-fn load_packet_ids(proto_dir: &PathBuf) -> Result<Vec<(u16, String)>> {
+fn load_packet_ids(proto_dir: &Path) -> Result<Vec<(u16, String)>> {
     let json_path = proto_dir.join("packetIds.json");
     let json_file = File::open(&json_path)
         .map_err(|e| format!("Failed to open {}: {}", json_path.display(), e))?;
@@ -109,7 +109,7 @@ fn load_packet_ids(proto_dir: &PathBuf) -> Result<Vec<(u16, String)>> {
 
 fn generate_message_ids_module(
     packet_ids: &[(u16, String)],
-    message_ids_path: &PathBuf,
+    message_ids_path: &Path,
 ) -> Result<()> {
     let variants = packet_ids.iter().map(|(id, name)| {
         let ident = format_ident!("{}", name);

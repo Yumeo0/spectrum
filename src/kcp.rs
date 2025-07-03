@@ -13,21 +13,21 @@ pub enum KcpError {
     /// KCP segment is too short to contain valid header and CRC data
     #[error("kcp segment must be at least {expected} bytes, but was {actual}")]
     SegmentTooShort { expected: usize, actual: usize },
-    
+
     /// KCP client instance was not properly initialized
     #[error("kcp client was not constructed")]
     ClientNotConstructed,
-    
+
     /// KCP segment belongs to a different conversation than expected
     #[error(
         "kcp packet does not belong to expected conversation (expected {expected}, was {actual})"
     )]
     PacketDoesNotBelongToConversation { expected: u32, actual: u32 },
-    
+
     /// CRC32 checksum validation failed for the KCP segment
     #[error("kcp packet CRC mismatch")]
     CrcMismatch { expected: u32, actual: u32 },
-    
+
     /// Error from the underlying KCP library
     #[error(transparent)]
     InnerKcpError(#[from] kcp::Error),
@@ -63,7 +63,7 @@ impl KcpSniffer {
             });
         }
 
-        self.kcp.input(&segments)?;
+        self.kcp.input(segments)?;
 
         let mut recv = Vec::new();
         while let Ok(size) = self.kcp.peeksize() {

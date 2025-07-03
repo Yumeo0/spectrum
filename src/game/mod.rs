@@ -20,23 +20,23 @@ pub enum GamePacketError {
     /// Packet header is too short to contain required fields
     #[error("packet header must be at least {expected} bytes, but was {actual}")]
     HeaderTooShort { expected: usize, actual: usize },
-    
+
     /// Packet type is not one of the valid game packet types
     #[error("invalid packet type {actual}. Expected one of: 1, 2, 4, 17, 18, 20")]
     InvalidPacketType { actual: u8 },
-    
+
     /// Packet data is shorter than the size specified in the header
     #[error("unexpected packet size. Expected {expected} bytes, but got {actual}")]
     PacketTooShort { expected: usize, actual: usize },
-    
+
     /// CRC32 checksum validation failed for the packet payload
     #[error("game packet CRC mismatch")]
     CrcMismatch { expected: u32, actual: u32 },
-    
+
     /// Failed to decompress the packet payload using zlib
     #[error("failed to decompress packet payload: {0}")]
     DecompressError(DecompressError),
-    
+
     /// Error occurred during payload decryption
     #[error(transparent)]
     CryptoError(#[from] CryptoError),
@@ -71,18 +71,18 @@ pub struct GamePacket {
 
 impl GamePacket {
     /// Creates a new GamePacket from raw packet data
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `data` - Raw packet bytes including all headers
     /// * `session_key` - Optional session key for decryption
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A parsed `GamePacket` with decrypted and decompressed payload
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns `GamePacketError` if:
     /// - Packet structure is invalid
     /// - CRC checksum fails
@@ -160,9 +160,9 @@ impl GamePacket {
     }
 
     /// Returns the human-readable name of the message type, if known
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// `Some(name)` if the message ID corresponds to a known message type,
     /// `None` if the message ID is unknown
     pub fn get_msg_name(&self) -> Option<&str> {
@@ -170,17 +170,17 @@ impl GamePacket {
     }
 
     /// Parses the packet payload as a Protocol Buffers message
-    /// 
+    ///
     /// # Type Parameters
-    /// 
+    ///
     /// * `T` - The Protocol Buffers message type to parse
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// The parsed message or a protobuf parsing error
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```ignore
     /// let response: ProtoKeyResponse = packet.parse_proto()?;
     /// ```
