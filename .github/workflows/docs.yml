@@ -1,0 +1,37 @@
+name: Generate and Deploy Docs
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  PROTOS_CDN: ${{ secrets.PROTOS_CDN }}
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup update nightly
+          rustup default nightly
+
+      - name: Download proto files
+        run: |
+          curl -sSL "$PROTOS_CDN/packetIds.json" -o proto/packetIds.json
+          curl -sSL "$PROTOS_CDN/protos.proto" -o proto/protos.proto
+
+      - name: Build docs
+        run: cargo doc --no-deps --verbose
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          publish_branch: gh-pages
+          user_name: github-actions
+          user_email: github-actions@github.com
