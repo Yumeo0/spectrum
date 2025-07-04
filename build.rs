@@ -130,10 +130,9 @@ fn generate_message_ids_enum(packet_ids: &[(u16, String)], out_dir: &Path) -> Re
     if let Err(e) = std::process::Command::new("rustfmt")
         .arg(&output_path)
         .status()
+        && e.kind() != ErrorKind::NotFound
     {
-        if e.kind() != ErrorKind::NotFound {
-            eprintln!("Failed to format generated file: {e}");
-        }
+        eprintln!("Failed to format generated file: {e}");
     }
 
     Ok(())
