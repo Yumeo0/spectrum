@@ -2,6 +2,8 @@ name: Create Release
 on:
   push:
     branches: [master]
+    paths:
+      - 'Cargo.toml'
 
 jobs:
   release:
