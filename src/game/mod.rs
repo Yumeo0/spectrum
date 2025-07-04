@@ -2,11 +2,11 @@ use std::fmt;
 use std::io::{self, Read};
 use std::time::SystemTime;
 
-use byteorder::{ReadBytesExt, LE};
+use byteorder::{LE, ReadBytesExt};
 use crc32fast::hash;
 use miniz_oxide::inflate::DecompressError;
-use thiserror::Error;
 use prost::Message;
+use thiserror::Error;
 
 use crate::crypto::{CryptoError, decrypt_payload, requires_crypto};
 use crate::game::message::MessageId;

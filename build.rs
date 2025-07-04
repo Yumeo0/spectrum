@@ -62,9 +62,11 @@ fn generate_protos(proto_files: &[PathBuf], out_dir: &Path) -> Result<()> {
 
     config.compile_protos(
         proto_files,
-        &[proto_files[0].parent().expect("Proto file has parent directory")],
+        &[proto_files[0]
+            .parent()
+            .expect("Proto file has parent directory")],
     )?;
-    
+
     Ok(())
 }
 
@@ -76,14 +78,18 @@ fn load_packet_ids(proto_dir: &Path) -> Result<Vec<(u16, String)>> {
     let json_value: Value = serde_json::from_str(&json_data)
         .map_err(|e| format!("Invalid JSON in {}: {e}", json_path.display()))?;
 
-    let json_object = json_value.as_object()
+    let json_object = json_value
+        .as_object()
         .ok_or_else(|| format!("Expected JSON object in {}", json_path.display()))?;
 
-    let mut packet_ids = json_object.iter()
+    let mut packet_ids = json_object
+        .iter()
         .map(|(key, value)| {
-            let id = key.parse::<u16>()
+            let id = key
+                .parse::<u16>()
                 .map_err(|e| format!("Invalid packet ID '{key}': {e}"))?;
-            let name = value.as_str()
+            let name = value
+                .as_str()
                 .ok_or_else(|| format!("Expected string value for packet ID {id}"))?
                 .to_string();
             Ok((id, name))

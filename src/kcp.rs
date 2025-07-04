@@ -73,7 +73,7 @@ impl KcpSniffer {
             }
         }
 
-        let _ = self.kcp.update(self.clock());  // Ignore update error
+        let _ = self.kcp.update(self.clock()); // Ignore update error
         Ok(received_messages)
     }
 
