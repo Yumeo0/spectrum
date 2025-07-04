@@ -1,9 +1,12 @@
 use std::fmt;
+use std::io::{self, Read};
 use std::time::SystemTime;
 
+use byteorder::{ReadBytesExt, LE};
 use crc32fast::hash;
 use miniz_oxide::inflate::DecompressError;
 use thiserror::Error;
+use prost::Message;
 
 use crate::crypto::{CryptoError, decrypt_payload, requires_crypto};
 use crate::game::message::MessageId;
@@ -12,22 +15,16 @@ use crate::utility::{decompress, requires_decompression};
 pub mod message;
 pub mod proto;
 
-const MIN_GAME_PACKET_HEADER_LEN: usize = 14;
-
 /// Errors that can occur during game packet parsing, validation, and processing
 #[derive(Error, Debug)]
 pub enum GamePacketError {
-    /// Packet header is too short to contain required fields
-    #[error("packet header must be at least {expected} bytes, but was {actual}")]
-    HeaderTooShort { expected: usize, actual: usize },
+    // Error reading or from the underlying IO stream
+    #[error("IO Error: {0}")]
+    Io(#[from] io::Error),
 
     /// Packet type is not one of the valid game packet types
     #[error("invalid packet type {actual}. Expected one of: 1, 2, 4, 17, 18, 20")]
     InvalidPacketType { actual: u8 },
-
-    /// Packet data is shorter than the size specified in the header
-    #[error("unexpected packet size. Expected {expected} bytes, but got {actual}")]
-    PacketTooShort { expected: usize, actual: usize },
 
     /// CRC32 checksum validation failed for the packet payload
     #[error("game packet CRC mismatch")]
@@ -89,42 +86,31 @@ impl GamePacket {
     /// - Decryption fails (missing key or crypto error)
     /// - Decompression fails
     pub fn try_new(data: Vec<u8>, session_key: Option<&[u8; 32]>) -> Result<Self, GamePacketError> {
-        if data.len() < MIN_GAME_PACKET_HEADER_LEN {
-            return Err(GamePacketError::HeaderTooShort {
-                expected: MIN_GAME_PACKET_HEADER_LEN,
-                actual: data.len(),
-            });
-        }
+        let mut cursor = io::Cursor::new(&data);
+        let size = cursor.read_u16::<LE>()? as usize + 3;
 
-        let size = u16::from_le_bytes([data[0], data[1]]) as usize + 3;
-        if data.len() < size {
-            return Err(GamePacketError::PacketTooShort {
-                expected: size,
-                actual: data.len(),
-            });
-        }
-
-        let msg_type = data[3];
-
-        let seq_no = u32::from_le_bytes(data[4..8].try_into().unwrap());
+        let _reserved = cursor.read_u8()?;
+        let msg_type = cursor.read_u8()?;
+        let seq_no = cursor.read_u32::<LE>()?;
 
         let rpc_id = match msg_type {
             4 | 20 => None,
-            _ => Some(u16::from_le_bytes(data[8..10].try_into().unwrap())),
+            _ => {
+                let id = cursor.read_u16::<LE>()?;
+                (id != 0).then_some(id)
+            }
         };
 
-        let (msg_id_offset, crc_offset, raw_offset) = match msg_type {
-            1 | 2 => (10, 12, 16),
-            4 => (8, 10, 14),
-            17 | 18 => (10, 12, 20),
-            20 => (8, 10, 18),
-            _ => return Err(GamePacketError::InvalidPacketType { actual: msg_type }),
-        };
+        let msg_id = cursor.read_u16::<LE>()?;
+        let crc = cursor.read_u32::<LE>()?;
 
-        let msg_id = u16::from_le_bytes(data[msg_id_offset..msg_id_offset + 2].try_into().unwrap());
-        let crc = u32::from_le_bytes(data[crc_offset..crc_offset + 4].try_into().unwrap());
+        if matches!(msg_type, 17 | 18 | 20) {
+            cursor.read_exact(&mut [0u8; 4])?;
+        }
 
-        let mut raw_msg = data[raw_offset..size].to_vec();
+        let payload_size = size - cursor.position() as usize;
+        let mut raw_msg = vec![0u8; payload_size];
+        cursor.read_exact(&mut raw_msg)?;
 
         let actual_crc = hash(&raw_msg);
         if actual_crc != crc {
@@ -135,12 +121,10 @@ impl GamePacket {
         }
 
         if requires_crypto(msg_id) {
-            if let Some(session_key) = session_key {
-                raw_msg =
-                    decrypt_payload(seq_no, session_key, raw_msg.into_boxed_slice())?.into_vec();
-            } else {
-                return Err(GamePacketError::CryptoError(CryptoError::MissingSessionKey));
-            }
+            raw_msg = match session_key {
+                Some(key) => decrypt_payload(seq_no, key, raw_msg.into_boxed_slice())?.into_vec(),
+                None => return Err(GamePacketError::CryptoError(CryptoError::MissingSessionKey)),
+            };
         }
 
         if requires_decompression(msg_type) {
@@ -169,23 +153,26 @@ impl GamePacket {
         MessageId::try_from(self.msg_id).ok().map(|id| id.into())
     }
 
-    /// Parses the packet payload as a Protocol Buffers message
+    /// Parses the packet payload as a Prost message
     ///
     /// # Type Parameters
     ///
-    /// * `T` - The Protocol Buffers message type to parse
+    /// * `T` – The Prost-generated message type to parse (must implement `Message + Default`)
     ///
     /// # Returns
     ///
-    /// The parsed message or a protobuf parsing error
+    /// The parsed message or a Prost decoding error
     ///
     /// # Example
     ///
     /// ```ignore
     /// let response: ProtoKeyResponse = packet.parse_proto()?;
     /// ```
-    pub fn parse_proto<T: protobuf::Message>(&self) -> protobuf::Result<T> {
-        T::parse_from_bytes(&self.raw_msg)
+    pub fn parse_proto<T>(&self) -> Result<T, prost::DecodeError>
+    where
+        T: Message + Default,
+    {
+        T::decode(self.raw_msg.as_ref())
     }
 }
 

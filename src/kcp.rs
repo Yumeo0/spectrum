@@ -64,24 +64,17 @@ impl KcpSniffer {
         }
 
         self.kcp.input(segments)?;
+        let mut received_messages = Vec::new();
 
-        let mut recv = Vec::new();
-        while let Ok(size) = self.kcp.peeksize() {
-            let mut bytes = vec![0; size];
-
-            match self.kcp.recv(&mut bytes) {
-                Ok(_size) => {
-                    recv.push(bytes);
-                }
-                _ => {
-                    // error ignored
-                }
+        while let Ok(message_size) = self.kcp.peeksize() {
+            let mut buffer = vec![0; message_size];
+            if self.kcp.recv(&mut buffer).is_ok() {
+                received_messages.push(buffer);
             }
         }
 
-        let _ = self.kcp.update(self.clock()); // error ignored
-
-        Ok(recv)
+        let _ = self.kcp.update(self.clock());  // Ignore update error
+        Ok(received_messages)
     }
 
     #[inline]
