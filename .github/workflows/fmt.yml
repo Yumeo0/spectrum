@@ -8,8 +8,6 @@ on:
 jobs:
   fmt:
     runs-on: ubuntu-latest
-    env:
-      PROTOS_CDN: ${{ secrets.PROTOS_CDN }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -25,7 +23,8 @@ jobs:
       - name: Download Proto Files and Install Protoc
         uses: ./.github/actions/protos
         with:
-          cdn: ${{ env.PROTOS_CDN }}
+          cdn: ${{ secrets.PROTOS_CDN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate build artifacts
         run: cargo check --all

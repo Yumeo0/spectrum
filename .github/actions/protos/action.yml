@@ -5,6 +5,9 @@ inputs:
   cdn:
     description: Base CDN URL
     required: true
+  token:
+    description: GitHub token for authentication
+    required: true
 
 runs:
   using: "composite"
@@ -28,4 +31,4 @@ runs:
     - name: Install Protoc
       uses: arduino/setup-protoc@v3
       with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        repo-token: ${{ inputs.token }}
