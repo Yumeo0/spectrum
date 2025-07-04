@@ -1,5 +1,5 @@
-name: Download Proto Files
-description: Downloads required proto files
+name: Download Proto Files and Install Protoc
+description: Downloads required proto files and install protoc
 
 inputs:
   cdn:
@@ -24,3 +24,6 @@ runs:
       shell: bash
       env:
         CDN: ${{ inputs.cdn }}
+    
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v3

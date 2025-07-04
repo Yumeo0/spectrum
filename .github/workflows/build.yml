@@ -19,8 +19,8 @@ jobs:
           rustup update nightly
           rustup default nightly
 
-      - name: Download proto files
-        uses: ./.github/actions/download-protos
+      - name: Download Proto Files and Install Protoc
+        uses: ./.github/actions/protos
         with:
           cdn: ${{ env.PROTOS_CDN }}
 
