@@ -57,6 +57,9 @@ fn generate_protos(proto_files: &[PathBuf], out_dir: &Path) -> Result<()> {
     config.default_package_filename("protos");
 
     if env::var("CARGO_FEATURE_SERDE").is_ok() {
+        if env::var("CARGO_FEATURE_SERDE_SKIP_NONE").is_ok() {
+            config.type_attribute(".", "#[serde_with::skip_serializing_none]");
+        }
         config.type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]");
     }
 
