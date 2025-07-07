@@ -81,6 +81,14 @@ use spectrum::Sniffer;
 let sniffer = Sniffer::new("...");
 ```
 
+## Usage
+
+When using the library, you must add `overflow-checks = false` to your dev profile in `Cargo.toml` to avoid errors caused by `kcp` dependency:
+```toml
+[profile.dev]
+overflow-checks = false
+```
+
 ## Acknowledgements
 
 Special thanks to [IceDynamix](https://github.com/IceDynamix) and all the [contributors](https://github.com/IceDynamix/reliquary/graphs/contributors) of [reliquary](https://github.com/IceDynamix/reliquary) repo, which was used as a reference for Spectrum's implementation. 
