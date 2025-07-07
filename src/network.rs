@@ -11,6 +11,10 @@ pub enum NetworkPacketError {
     #[error("error while parsing network packet: {0}")]
     EtherparsePacketError(#[from] SliceError),
 
+    /// The Ethernet/IP header could not be parsed
+    #[error("Ethernet/IP header parse failed")]
+    HeaderParseFailed,
+
     /// The packet does not contain a transport layer (UDP/TCP)
     #[error("transport layer is not present on packet")]
     TransportLayerNotPresent,
@@ -50,16 +54,26 @@ pub fn parse_network_packet(
     }
 }
 
-pub fn parse_udp(data: Vec<u8>) -> Result<(UdpHeader, Vec<u8>), NetworkPacketError> {
-    let packet: SlicedPacket = SlicedPacket::from_ethernet(&data)?;
+pub fn parse_udp(data: Vec<u8>) 
+    -> Result<(UdpHeader, Vec<u8>), NetworkPacketError> 
+{
+    let is_raw_ip = data
+        .first()
+        .map_or(false, |b| matches!(b >> 4, 4 | 6));
 
-    let Some(transport) = packet.transport else {
-        return Err(NetworkPacketError::TransportLayerNotPresent);
+    let packet = if is_raw_ip {
+        SlicedPacket::from_ip(&data)
+            .map_err(|_| NetworkPacketError::HeaderParseFailed)?
+    } else {
+        SlicedPacket::from_ethernet(&data)
+            .map_err(|_| NetworkPacketError::HeaderParseFailed)?
     };
 
-    let TransportSlice::Udp(udp) = transport else {
-        return Err(NetworkPacketError::TransportLayerNotUdp);
-    };
+    let transport = packet.transport
+        .ok_or(NetworkPacketError::TransportLayerNotPresent)?;
+    
+    let TransportSlice::Udp(udp) = transport
+        else { return Err(NetworkPacketError::TransportLayerNotUdp) };
 
     Ok((udp.to_header(), udp.payload().to_vec()))
 }
