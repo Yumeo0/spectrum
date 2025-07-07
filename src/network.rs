@@ -55,7 +55,7 @@ pub fn parse_network_packet(
 }
 
 pub fn parse_udp(data: Vec<u8>) -> Result<(UdpHeader, Vec<u8>), NetworkPacketError> {
-    let is_raw_ip = data.first().map_or(false, |b| matches!(b >> 4, 4 | 6));
+    let is_raw_ip = data.first().is_some_and(|b| matches!(b >> 4, 4 | 6));
 
     let packet = if is_raw_ip {
         SlicedPacket::from_ip(&data).map_err(|_| NetworkPacketError::HeaderParseFailed)?
