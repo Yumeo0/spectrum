@@ -54,26 +54,22 @@ pub fn parse_network_packet(
     }
 }
 
-pub fn parse_udp(data: Vec<u8>) 
-    -> Result<(UdpHeader, Vec<u8>), NetworkPacketError> 
-{
-    let is_raw_ip = data
-        .first()
-        .map_or(false, |b| matches!(b >> 4, 4 | 6));
+pub fn parse_udp(data: Vec<u8>) -> Result<(UdpHeader, Vec<u8>), NetworkPacketError> {
+    let is_raw_ip = data.first().map_or(false, |b| matches!(b >> 4, 4 | 6));
 
     let packet = if is_raw_ip {
-        SlicedPacket::from_ip(&data)
-            .map_err(|_| NetworkPacketError::HeaderParseFailed)?
+        SlicedPacket::from_ip(&data).map_err(|_| NetworkPacketError::HeaderParseFailed)?
     } else {
-        SlicedPacket::from_ethernet(&data)
-            .map_err(|_| NetworkPacketError::HeaderParseFailed)?
+        SlicedPacket::from_ethernet(&data).map_err(|_| NetworkPacketError::HeaderParseFailed)?
     };
 
-    let transport = packet.transport
+    let transport = packet
+        .transport
         .ok_or(NetworkPacketError::TransportLayerNotPresent)?;
-    
-    let TransportSlice::Udp(udp) = transport
-        else { return Err(NetworkPacketError::TransportLayerNotUdp) };
+
+    let TransportSlice::Udp(udp) = transport else {
+        return Err(NetworkPacketError::TransportLayerNotUdp);
+    };
 
     Ok((udp.to_header(), udp.payload().to_vec()))
 }
