@@ -17,16 +17,12 @@ runs:
       shell: bash
 
     - name: Download packetIds.json
-      run: curl -sSL "$CDN/packetIds.json" -o proto/packetIds.json
+      run: curl -sSL "${{ inputs.cdn }}/packetIds.json" -o proto/packetIds.json
       shell: bash
-      env:
-        CDN: ${{ inputs.cdn }}
 
     - name: Download protos.proto
-      run: curl -sSL "$CDN/protos.proto" -o proto/protos.proto
+      run: curl -sSL "${{ inputs.cdn }}/protos.proto" -o proto/protos.proto
       shell: bash
-      env:
-        CDN: ${{ inputs.cdn }}
     
     - name: Install Protoc
       uses: arduino/setup-protoc@v3
