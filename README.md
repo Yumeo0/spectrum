@@ -89,9 +89,17 @@ When using the library, you must add `overflow-checks = false` to your dev profi
 overflow-checks = false
 ```
 
+## Projects using Spectrum
+
+We value community contributions and would love to see your projects that use Spectrum! Hop on board and add your project to the list below!
+
+- [Spectro PCAP Server](https://github.com/Wuthery/spectro-pcap-server) by [Wuthery Team](https://github.com/Wuthery) - API server for parsing capture files into importable JSON game data; used for [Wuthery Website](https://wuthery.com);
+
 ## Acknowledgements
 
-Special thanks to [IceDynamix](https://github.com/IceDynamix) and all the [contributors](https://github.com/IceDynamix/reliquary/graphs/contributors) of [reliquary](https://github.com/IceDynamix/reliquary) repo, which was used as a reference for Spectrum's implementation. 
+Special thanks to [IceDynamix](https://github.com/IceDynamix) and all the [contributors](https://github.com/IceDynamix/reliquary/graphs/contributors) of [reliquary](https://github.com/IceDynamix/reliquary) repo, which was used as a reference for Spectrum's implementation.
+
+[Pktmon](https://github.com/emmachase/pktmon) and [pcap](https://github.com/rust-pcap/pcap) are two great rust crates for sniffing game packets. Kudos to [emmachase](https://github.com/emmachase) and [pcap crate contributors](https://github.com/rust-pcap/pcap/graphs/contributors) for their work.
 
 ## License
 
