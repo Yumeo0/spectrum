@@ -53,6 +53,7 @@ fn find_proto_files(dir: &Path) -> Result<Vec<PathBuf>> {
 
 fn generate_protos(proto_files: &[PathBuf], out_dir: &Path) -> Result<()> {
     let mut config = Config::new();
+    config.enable_type_names();
     config.out_dir(out_dir);
     config.default_package_filename("protos");
 
