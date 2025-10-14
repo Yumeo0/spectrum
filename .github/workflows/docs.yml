@@ -28,6 +28,9 @@ jobs:
       - name: Add redirect
         run: echo '<meta http-equiv="refresh" content="0;url=spectrum/index.html">' > target/doc/index.html
 
+      - name: Copy CNAME
+        run: cp CNAME target/doc/CNAME
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
