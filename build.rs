@@ -20,7 +20,22 @@ fn main() {
 fn try_main() -> Result<()> {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
     let manifest = PathBuf::from(manifest_dir);
-    let proto_dir = manifest.join("../out/spectrum");
+
+    // Protos live in this crate's own `proto/` directory by default. A consumer
+    // can point at another directory with `SPECTRUM_PROTO_DIR` (absolute, or
+    // relative to this crate).
+    let proto_dir = match env::var_os("SPECTRUM_PROTO_DIR") {
+        Some(dir) => {
+            let dir = PathBuf::from(dir);
+            if dir.is_absolute() {
+                dir
+            } else {
+                manifest.join(dir)
+            }
+        }
+        None => manifest.join("proto"),
+    };
+
     let out_dir = manifest.join("src/game/proto");
     let message_ids_path = manifest.join("src/game");
 
@@ -33,8 +48,12 @@ fn try_main() -> Result<()> {
     let packet_ids = load_packet_ids(&proto_dir)?;
     generate_message_ids_enum(&packet_ids, &message_ids_path)?;
 
-    println!("cargo:rerun-if-changed=../out/spectrum/packetIds.json");
-    println!("cargo:rerun-if-changed=../out/spectrum");
+    println!(
+        "cargo:rerun-if-changed={}",
+        proto_dir.join("packetIds.json").display()
+    );
+    println!("cargo:rerun-if-changed={}", proto_dir.display());
+    println!("cargo:rerun-if-env-changed=SPECTRUM_PROTO_DIR");
     Ok(())
 }
 
