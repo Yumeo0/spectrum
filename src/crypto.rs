@@ -78,6 +78,10 @@ fn decrypt_aes256_ecb_pkcs7(session_key: &[u8; 32], data: &[u8]) -> Result<Box<[
 }
 
 pub fn decrypt_session_key(data: Vec<u8>, private_key: &str) -> Result<[u8; 32], CryptoError> {
+    // current protocol: key field is a 32-char ASCII hex string used directly as the AES-256 key
+    if data.len() == 32 && data.iter().all(u8::is_ascii_hexdigit) {
+        return data.as_slice().try_into().map_err(Into::into);
+    }
     let rsa_key = rsa::RsaPrivateKey::from_pkcs1_pem(private_key)?;
     let session_key = rsa_key.decrypt(rsa::Pkcs1v15Encrypt, &data[..])?;
     Ok(session_key.as_slice().try_into()?)

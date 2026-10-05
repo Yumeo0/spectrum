@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::crypto::decrypt_session_key;
 use crate::game::message::MessageId;
-use crate::game::proto::ProtoKeyResponse;
+use crate::game::proto::{ProtoKeyRequest, ProtoKeyResponse};
 use crate::game::{GamePacket, GamePacketError};
 use crate::kcp::KcpSniffer;
 use crate::network::parse_network_packet;
@@ -87,6 +87,26 @@ impl Sniffer {
             private_key,
             ..Default::default()
         }
+    }
+
+    /// Creates a sniffer pre-seeded with a known session key, so a capture can be
+    /// restarted without observing the handshake again.
+    pub fn with_session_key(private_key: String, session_key: Option<[u8; 32]>) -> Self {
+        Self {
+            private_key,
+            session_key,
+            ..Default::default()
+        }
+    }
+
+    /// The currently known session key (hex key from msg 111 or RSA-decrypted msg 112).
+    pub fn session_key(&self) -> Option<[u8; 32]> {
+        self.session_key
+    }
+
+    /// Manually install a session key (e.g. a cached token).
+    pub fn set_session_key(&mut self, key: [u8; 32]) {
+        self.session_key = Some(key);
     }
 
     /// Processes a raw network packet and returns any extracted packets
@@ -195,9 +215,32 @@ impl Sniffer {
     fn receive_game_packet(&mut self, data: Vec<u8>) -> Result<GamePacket, GamePacketError> {
         let packet = GamePacket::try_new(data, self.session_key.as_ref())?;
 
+        if let Ok(MessageId::ProtoKeyRequest) = MessageId::try_from(packet.msg_id) {
+            if let Ok(parsed) = packet.parse_proto::<ProtoKeyRequest>() {
+                println!(
+                    "msg 111: is_login={} trace_id={} ({} chars)",
+                    parsed.is_login,
+                    parsed.trace_id,
+                    parsed.trace_id.len()
+                );
+                if let Ok(k) = <[u8; 32]>::try_from(parsed.trace_id.as_bytes()) {
+                    self.session_key = Some(k); // hypothesis: hex string IS the AES-256 key
+                }
+            }
+        }
+
         if let Ok(MessageId::ProtoKeyResponse) = MessageId::try_from(packet.msg_id) {
-            let parsed_packet = packet.parse_proto::<ProtoKeyResponse>().unwrap();
-            self.session_key = Some(decrypt_session_key(parsed_packet.key, &self.private_key)?);
+            if let Ok(parsed_packet) = packet.parse_proto::<ProtoKeyResponse>() {
+                let keyhex: String = parsed_packet.key.iter().map(|b| format!("{b:02x}")).collect();
+                println!("msg 112: key={} bytes: {}", parsed_packet.key.len(), keyhex);
+                match decrypt_session_key(parsed_packet.key, &self.private_key) {
+                    Ok(k) => {
+                        println!("msg 112: RSA-decrypted session key: {}", k.iter().map(|b| format!("{b:02x}")).collect::<String>());
+                        self.session_key = Some(k);
+                    }
+                    Err(e) => println!("msg 112: decrypt failed ({e}); keeping session key from msg 111"),
+                }
+            }
         }
 
         Ok(packet)

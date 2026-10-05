@@ -20,7 +20,7 @@ fn main() {
 fn try_main() -> Result<()> {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
     let manifest = PathBuf::from(manifest_dir);
-    let proto_dir = manifest.join("proto");
+    let proto_dir = manifest.join("../out/spectrum");
     let out_dir = manifest.join("src/game/proto");
     let message_ids_path = manifest.join("src/game");
 
@@ -33,8 +33,8 @@ fn try_main() -> Result<()> {
     let packet_ids = load_packet_ids(&proto_dir)?;
     generate_message_ids_enum(&packet_ids, &message_ids_path)?;
 
-    println!("cargo:rerun-if-changed=proto/packetIds.json");
-    println!("cargo:rerun-if-changed=proto");
+    println!("cargo:rerun-if-changed=../out/spectrum/packetIds.json");
+    println!("cargo:rerun-if-changed=../out/spectrum");
     Ok(())
 }
 
